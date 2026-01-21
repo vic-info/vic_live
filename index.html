@@ -5,277 +5,261 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vic Live - HLS Player</title>
-  <style>
-    @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@400;600&display=swap");
+  /* Reset & Base */
+  :root {
+  --bg: #0f1720;
+  --panel: #111f2b;
+  --accent: #6dd3a3;
+  --accent-2: #f5d26a;
+  --muted: #7f96a3;
+  --danger: #ff6b6b;
+  --text: #e6f0f4;
+  --header-h: 40px;
+  }
 
-    :root {
-      --bg: #0f1720;
-      --panel: #111f2b;
-      --accent: #6dd3a3;
-      --accent-2: #f5d26a;
-      --muted: #7f96a3;
-      --danger: #ff6b6b;
-      --text: #e6f0f4;
-    }
+  * { box-sizing: border-box; }
 
-    * {
-      box-sizing: border-box;
-    }
+  body {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  }
 
-    body {
-      margin: 0;
-      font-family: "Space Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-      background: radial-gradient(1400px 800px at 30% -20%, #1c2f3e, transparent),
-        radial-gradient(1200px 700px at 120% 10%, #1f3b2f, transparent), var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
+  /* Main Layout */
+  .shell {
+  flex: 1;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 16px;
+  padding: 16px 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  height: 100%;
+  }
 
-    .shell {
-      width: min(1200px, 100%);
-      background: var(--panel);
-      border-radius: 18px;
-      padding: 28px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
+  /* Header Compact */
+  header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-h);
+  }
+  h1 { font-size: 18px; margin: 0; letter-spacing: 0.05em; color: var(--accent); }
+  .status { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
 
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
+  /* Content Grid */
+  .wrapper {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  grid-template-rows: 1fr;
+  gap: 20px;
+  min-height: 0; /* Prevent overflow */
+  }
 
-    h1 {
-      font-size: 22px;
-      margin: 0;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
+  /* Left: Player */
+  .player-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.05);
+  }
+  video { width: 100%; height: 100%; object-fit: contain; }
 
-    .status {
-      font-size: 12px;
-      color: var(--muted);
-      font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-        "Courier New", monospace;
-    }
+  /* Stats Overlay */
+  .stats-overlay {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(4px);
+  padding: 8px 12px;
+  border-radius: 8px;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: x 12px;
+  font-size: 11px;
+  font-family: "IBM Plex Mono", monospace;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  }
+  .stats-overlay.hidden { opacity: 0; pointer-events: none; display: grid; }
+  .stat-row { display: contents; }
+  .stat-label { color: var(--muted); margin-right: 8px; }
+  .stat-val { color: var(--accent-2); font-weight: 600; text-align: right; }
 
-    .controls {
-      display: grid;
-      gap: 12px;
-      margin-top: 20px;
-    }
+  /* Right: Controls Panel */
+  .sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding-right: 4px;
+  }
 
-    .row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 12px;
-      align-items: center;
-    }
+  .panel-box {
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 16px;
+  }
 
-    .settings {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
+  /* Input Row */
+  .input-group {
+  display: grid;
+  gap: 8px;
+  }
+  input[type="url"] {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.3);
+  color: var(--text);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  }
+  button#play-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--accent);
+  color: #0b151b;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  }
 
-    .toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: rgba(8, 15, 22, 0.7);
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      font-size: 12px;
-      color: var(--muted);
-      cursor: pointer;
-      user-select: none;
-    }
+  /* Toggles Grid */
+  .toggles-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  }
+  .toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  background: rgba(255,255,255,0.03);
+  padding: 6px 10px;
+  border-radius: 6px;
+  }
+  .toggle:hover { background: rgba(255,255,255,0.06); }
+  .toggle input { accent-color: var(--accent); margin: 0; }
 
-    .toggle input {
-      accent-color: var(--accent);
-    }
+  /* Log Area */
+  .log-area {
+  flex: 1;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  color: var(--muted);
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  }
+  .log-area.error { color: var(--danger); }
 
-    input[type="url"] {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(8, 15, 22, 0.7);
-      color: var(--text);
-      font-size: 14px;
-    }
+  /* Tip */
+  .tip { font-size: 11px; color: var(--muted); line-height: 1.4; opacity: 0.7; }
+  .tip code { background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; }
 
-    button {
-      padding: 12px 18px;
-      border-radius: 10px;
-      border: none;
-      background: var(--accent);
-      color: #0b151b;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .helper {
-      margin-top: 12px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .helper code {
-      font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-        "Courier New", monospace;
-    }
-
-    .player {
-      margin-top: 24px;
-      background: #0a1218;
-      border-radius: 16px;
-      padding: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    video {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      border-radius: 12px;
-      background: #050a0d;
-    }
-
-    .stats {
-      margin-top: 16px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 10px;
-    }
-
-    .stat {
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(12, 21, 29, 0.95), rgba(9, 17, 23, 0.65));
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      min-height: 60px;
-    }
-
-    .stat .label {
-      font-size: 11px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .stat .value {
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .log {
-      margin-top: 16px;
-      padding: 12px;
-      background: rgba(6, 10, 14, 0.7);
-      border-radius: 10px;
-      font-size: 12px;
-      color: var(--muted);
-      min-height: 44px;
-    }
-
-    .log.error {
-      color: var(--danger);
-    }
-
-    @media (max-width: 640px) {
-      .row {
-        grid-template-columns: 1fr;
-      }
-
-      button {
-        width: 100%;
-      }
-    }
+  /* Responsive */
+  @media (max-width: 900px) {
+  .wrapper { grid-template-columns: 1fr; grid-template-rows: auto auto; overflow-y: auto; }
+  .player-section { aspect-ratio: 16/9; min-height: auto; }
+  }
   </style>
 </head>
 
 <body>
   <div class="shell">
     <header>
-      <h1>Live Player</h1>
+      <h1>Vic Live</h1>
       <div class="status" id="status">Idle</div>
     </header>
 
-    <div class="controls">
-      <div class="row">
-        <input id="hls-input" type="url" placeholder="Paste HLS .m3u8 URL" autocomplete="off" spellcheck="false" />
-        <button id="play-btn" type="button">Assign &amp; Play</button>
+    <div class="wrapper">
+      <!-- Left: Player -->
+      <div class="player-section">
+        <video id="video" controls playsinline></video>
+        <div class="stats-overlay hidden" id="stats">
+          <div class="stat-row">
+            <span class="stat-label">LATENCY</span>
+            <span class="stat-val" id="stat-latency">--</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">BUFFER</span>
+            <span class="stat-val" id="stat-buffer">--</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">LEVEL</span>
+            <span class="stat-val" id="stat-level">--</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">RES</span>
+            <span class="stat-val" id="stat-res">--</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">DROP</span>
+            <span class="stat-val" id="stat-dropped">--</span>
+          </div>
+        </div>
       </div>
-      <div class="settings">
-        <label class="toggle" title="Favor low-latency live playback">
-          <input id="low-latency" type="checkbox" />
-          Low latency
-        </label>
-        <label class="toggle" title="Attempt to autoplay (Chrome usually requires muted)">
-          <input id="autoplay" type="checkbox" />
-          Autoplay
-        </label>
-        <label class="toggle" title="Mute the video element">
-          <input id="muted" type="checkbox" />
-          Muted
-        </label>
-        <label class="toggle" title="Show live stats">
-          <input id="show-stats" type="checkbox" checked />
-          Stats
-        </label>
-      </div>
-    </div>
 
-    <div class="helper">
-      Tip: You can also open this page with <code>?hls=YOUR_URL</code>, optionally add
-      <code>&amp;ll=1&amp;autoplay=1&amp;muted=1</code>, or call <code>assignHls(url)</code> in the console.
-    </div>
+      <!-- Right: Sidebar -->
+      <div class="sidebar">
+        <!-- Input -->
+        <div class="panel-box">
+          <div class="input-group">
+            <input id="hls-input" type="url" placeholder="Paste HLS URL..." autocomplete="off" spellcheck="false" />
+            <button id="play-btn" type="button">Play</button>
+          </div>
+        </div>
 
-    <div class="player">
-      <video id="video" controls playsinline></video>
-      <div class="stats" id="stats">
-        <div class="stat">
-          <span class="label">Latency</span>
-          <span class="value" id="stat-latency">--</span>
+        <!-- Settings -->
+        <div class="panel-box">
+          <div class="toggles-grid">
+            <label class="toggle" title="Low latency mode">
+              <input id="low-latency" type="checkbox" />
+              Low Latency
+            </label>
+            <label class="toggle" title="Autoplay">
+              <input id="autoplay" type="checkbox" />
+              Autoplay
+            </label>
+            <label class="toggle" title="Mute video">
+              <input id="muted" type="checkbox" />
+              Muted
+            </label>
+            <label class="toggle" title="Show stats overlay">
+              <input id="show-stats" type="checkbox" checked />
+              Stats
+            </label>
+          </div>
         </div>
-        <div class="stat">
-          <span class="label">Buffer</span>
-          <span class="value" id="stat-buffer">--</span>
-        </div>
-        <div class="stat">
-          <span class="label">Level</span>
-          <span class="value" id="stat-level">--</span>
-        </div>
-        <div class="stat">
-          <span class="label">Resolution</span>
-          <span class="value" id="stat-res">--</span>
-        </div>
-        <div class="stat">
-          <span class="label">Dropped</span>
-          <span class="value" id="stat-dropped">--</span>
+
+        <!-- Log -->
+        <div class="panel-box log-area" id="log">Waiting...</div>
+
+        <!-- Tip -->
+        <div class="tip">
+          Tip: Use <code>?hls=URL</code> or <code>assignHls(url)</code>.
         </div>
       </div>
-      <div class="log" id="log">Waiting for HLS URL...</div>
     </div>
   </div>
 
