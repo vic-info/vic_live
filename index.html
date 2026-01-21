@@ -228,7 +228,7 @@
       </div>
       <div class="settings">
         <label class="toggle" title="Favor low-latency live playback">
-          <input id="low-latency" type="checkbox" checked />
+          <input id="low-latency" type="checkbox" />
           Low latency
         </label>
         <label class="toggle" title="Attempt to autoplay (Chrome usually requires muted)">
@@ -344,13 +344,13 @@
         startPosition: -1,
         capLevelToPlayerSize: true,
         testBandwidth: true,
-        maxFragLookUpTolerance: 0.2,
-        maxLiveSyncPlaybackRate: lowLatency ? 1.5 : 1,
-        liveSyncDurationCount: lowLatency ? 2 : 3,
-        liveMaxLatencyDurationCount: lowLatency ? 6 : 10,
-        maxBufferLength: lowLatency ? 12 : 30,
-        maxMaxBufferLength: lowLatency ? 20 : 60,
-        backBufferLength: lowLatency ? 30 : 60,
+        maxFragLookUpTolerance: lowLatency ? 0.2 : 0.3,
+        maxLiveSyncPlaybackRate: lowLatency ? 1.5 : 1.05,
+        liveSyncDurationCount: lowLatency ? 2 : 4,
+        liveMaxLatencyDurationCount: lowLatency ? 6 : 12,
+        maxBufferLength: lowLatency ? 12 : 45,
+        maxMaxBufferLength: lowLatency ? 20 : 90,
+        backBufferLength: lowLatency ? 30 : 120,
         maxBufferSize: 60 * 1000000,
         manifestLoadingTimeOut: 20000,
         levelLoadingTimeOut: 20000,
