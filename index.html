@@ -211,6 +211,18 @@
         hlsInstance = new window.Hls({
           enableWorker: true,
           lowLatencyMode: true,
+          // Low-latency live optimizations
+          liveSyncDuration: 3,           // Target 3s behind live edge (default: 6)
+          liveMaxLatencyDuration: 8,     // Max 8s behind before catch-up (default: Infinity)
+          liveDurationInfinity: true,    // Treat as infinite live stream
+          // Buffer settings
+          maxBufferLength: 10,           // Max buffer ahead (default: 30)
+          maxMaxBufferLength: 30,        // Max buffer in any case
+          maxBufferSize: 30 * 1000000,   // 30MB max buffer
+          // Faster start
+          backBufferLength: 10,          // Keep only 10s of back buffer
+          // Fragment loading
+          maxFragLookUpTolerance: 0.2,   // Faster fragment matching
         });
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(videoEl);
@@ -237,9 +249,20 @@
     });
 
     const params = new URLSearchParams(window.location.search);
-    const autoUrl = params.get("hls") || params.get("url");
+    let autoUrl = params.get("hls") || params.get("url");
+
+    // Decode URL if it was encoded
     if (autoUrl) {
-      assignHls(autoUrl);
+      try {
+        autoUrl = decodeURIComponent(autoUrl);
+      } catch (e) {
+        // Already decoded or invalid, use as-is
+      }
+      // Delay slightly to ensure DOM is ready
+      setTimeout(() => {
+        console.log("Auto-loading HLS URL:", autoUrl);
+        assignHls(autoUrl);
+      }, 100);
     }
   </script>
 </body>
