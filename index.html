@@ -6,10 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vic Live - HLS Player</title>
   <style>
+    @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@400;600&display=swap");
+
     :root {
       --bg: #0f1720;
       --panel: #111f2b;
       --accent: #6dd3a3;
+      --accent-2: #f5d26a;
       --muted: #7f96a3;
       --danger: #ff6b6b;
       --text: #e6f0f4;
@@ -21,8 +24,7 @@
 
     body {
       margin: 0;
-      font-family: "IBM Plex Mono", "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-        "Liberation Mono", "Courier New", monospace;
+      font-family: "Space Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
       background: radial-gradient(1400px 800px at 30% -20%, #1c2f3e, transparent),
         radial-gradient(1200px 700px at 120% 10%, #1f3b2f, transparent), var(--bg);
       color: var(--text);
@@ -60,13 +62,45 @@
     .status {
       font-size: 12px;
       color: var(--muted);
+      font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+        "Courier New", monospace;
     }
 
     .controls {
       display: grid;
-      grid-template-columns: 1fr auto;
       gap: 12px;
       margin-top: 20px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .settings {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(8, 15, 22, 0.7);
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle input {
+      accent-color: var(--accent);
     }
 
     input[type="url"] {
@@ -100,6 +134,11 @@
       color: var(--muted);
     }
 
+    .helper code {
+      font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+        "Courier New", monospace;
+    }
+
     .player {
       margin-top: 24px;
       background: #0a1218;
@@ -113,6 +152,40 @@
       aspect-ratio: 16 / 9;
       border-radius: 12px;
       background: #050a0d;
+    }
+
+    .stats {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(12, 21, 29, 0.95), rgba(9, 17, 23, 0.65));
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 60px;
+    }
+
+    .stat .label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .stat .value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .hidden {
+      display: none;
     }
 
     .log {
@@ -130,7 +203,7 @@
     }
 
     @media (max-width: 640px) {
-      .controls {
+      .row {
         grid-template-columns: 1fr;
       }
 
@@ -149,17 +222,59 @@
     </header>
 
     <div class="controls">
-      <input id="hls-input" type="url" placeholder="Paste HLS .m3u8 URL" autocomplete="off" spellcheck="false" />
-      <button id="play-btn" type="button">Assign &amp; Play</button>
+      <div class="row">
+        <input id="hls-input" type="url" placeholder="Paste HLS .m3u8 URL" autocomplete="off" spellcheck="false" />
+        <button id="play-btn" type="button">Assign &amp; Play</button>
+      </div>
+      <div class="settings">
+        <label class="toggle" title="Favor low-latency live playback">
+          <input id="low-latency" type="checkbox" checked />
+          Low latency
+        </label>
+        <label class="toggle" title="Attempt to autoplay (Chrome usually requires muted)">
+          <input id="autoplay" type="checkbox" />
+          Autoplay
+        </label>
+        <label class="toggle" title="Mute the video element">
+          <input id="muted" type="checkbox" />
+          Muted
+        </label>
+        <label class="toggle" title="Show live stats">
+          <input id="show-stats" type="checkbox" checked />
+          Stats
+        </label>
+      </div>
     </div>
 
     <div class="helper">
-      Tip: You can also open this page with <code>?hls=YOUR_URL</code> or call <code>assignHls(url)</code> in the
-      console.
+      Tip: You can also open this page with <code>?hls=YOUR_URL</code>, optionally add
+      <code>&amp;ll=1&amp;autoplay=1&amp;muted=1</code>, or call <code>assignHls(url)</code> in the console.
     </div>
 
     <div class="player">
       <video id="video" controls playsinline></video>
+      <div class="stats" id="stats">
+        <div class="stat">
+          <span class="label">Latency</span>
+          <span class="value" id="stat-latency">--</span>
+        </div>
+        <div class="stat">
+          <span class="label">Buffer</span>
+          <span class="value" id="stat-buffer">--</span>
+        </div>
+        <div class="stat">
+          <span class="label">Level</span>
+          <span class="value" id="stat-level">--</span>
+        </div>
+        <div class="stat">
+          <span class="label">Resolution</span>
+          <span class="value" id="stat-res">--</span>
+        </div>
+        <div class="stat">
+          <span class="label">Dropped</span>
+          <span class="value" id="stat-dropped">--</span>
+        </div>
+      </div>
       <div class="log" id="log">Waiting for HLS URL...</div>
     </div>
   </div>
@@ -171,16 +286,39 @@
     const inputEl = document.getElementById("hls-input");
     const buttonEl = document.getElementById("play-btn");
     const videoEl = document.getElementById("video");
+    const lowLatencyEl = document.getElementById("low-latency");
+    const autoplayEl = document.getElementById("autoplay");
+    const mutedEl = document.getElementById("muted");
+    const showStatsEl = document.getElementById("show-stats");
+    const statsEl = document.getElementById("stats");
+    const statLatencyEl = document.getElementById("stat-latency");
+    const statBufferEl = document.getElementById("stat-buffer");
+    const statLevelEl = document.getElementById("stat-level");
+    const statResEl = document.getElementById("stat-res");
+    const statDroppedEl = document.getElementById("stat-dropped");
 
     let hlsInstance = null;
+    let statsTimer = null;
 
-    function setStatus(message, isError = false) {
+    function setStatus(message) {
       statusEl.textContent = message;
+    }
+
+    function setLog(message, isError = false) {
       logEl.textContent = message;
       logEl.classList.toggle("error", isError);
     }
 
+    function setState(message, isError = false) {
+      setStatus(message);
+      setLog(message, isError);
+    }
+
     function cleanupHls() {
+      if (statsTimer) {
+        clearInterval(statsTimer);
+        statsTimer = null;
+      }
       if (hlsInstance) {
         hlsInstance.destroy();
         hlsInstance = null;
@@ -189,57 +327,151 @@
       videoEl.load();
     }
 
+    function applyVideoFlags() {
+      if (autoplayEl.checked && !mutedEl.checked) {
+        mutedEl.checked = true;
+      }
+      videoEl.autoplay = autoplayEl.checked;
+      videoEl.muted = mutedEl.checked;
+    }
+
+    function buildHlsConfig() {
+      const lowLatency = lowLatencyEl.checked;
+      return {
+        enableWorker: true,
+        lowLatencyMode: lowLatency,
+        liveDurationInfinity: true,
+        startPosition: -1,
+        capLevelToPlayerSize: true,
+        testBandwidth: true,
+        maxFragLookUpTolerance: 0.2,
+        maxLiveSyncPlaybackRate: lowLatency ? 1.5 : 1,
+        liveSyncDurationCount: lowLatency ? 2 : 3,
+        liveMaxLatencyDurationCount: lowLatency ? 6 : 10,
+        maxBufferLength: lowLatency ? 12 : 30,
+        maxMaxBufferLength: lowLatency ? 20 : 60,
+        backBufferLength: lowLatency ? 30 : 60,
+        maxBufferSize: 60 * 1000000,
+        manifestLoadingTimeOut: 20000,
+        levelLoadingTimeOut: 20000,
+        fragLoadingTimeOut: 20000,
+        appendErrorMaxRetry: 3
+      };
+    }
+
+    function getBufferAhead() {
+      const current = videoEl.currentTime;
+      const buffered = videoEl.buffered;
+      for (let i = 0; i < buffered.length; i += 1) {
+        if (current >= buffered.start(i) && current <= buffered.end(i)) {
+          return buffered.end(i) - current;
+        }
+      }
+      return 0;
+    }
+
+    function getLatency() {
+      if (!hlsInstance) {
+        return null;
+      }
+      if (typeof hlsInstance.latency === "number" && Number.isFinite(hlsInstance.latency)) {
+        return hlsInstance.latency;
+      }
+      if (typeof hlsInstance.liveSyncPosition === "number" && Number.isFinite(hlsInstance.liveSyncPosition)) {
+        return Math.max(0, hlsInstance.liveSyncPosition - videoEl.currentTime);
+      }
+      return null;
+    }
+
+    function updateStats() {
+      if (!hlsInstance) {
+        return;
+      }
+      const latency = getLatency();
+      const buffer = getBufferAhead();
+      const levels = hlsInstance.levels ? hlsInstance.levels.length : 0;
+      const levelIndex = hlsInstance.currentLevel;
+      let levelText = "--";
+      if (levels) {
+        const activeLevel = levelIndex >= 0 ? levelIndex : hlsInstance.loadLevel;
+        const displayLevel = activeLevel >= 0 ? `${activeLevel + 1}/${levels}` : `--/${levels}`;
+        levelText = hlsInstance.autoLevelEnabled ? `Auto (${displayLevel})` : displayLevel;
+      }
+
+      statLatencyEl.textContent = latency === null ? "--" : `${latency.toFixed(2)}s`;
+      statBufferEl.textContent = Number.isFinite(buffer) ? `${buffer.toFixed(1)}s` : "--";
+      statLevelEl.textContent = levelText;
+      statResEl.textContent = videoEl.videoWidth ? `${videoEl.videoWidth}x${videoEl.videoHeight}` : "--";
+
+      const quality = videoEl.getVideoPlaybackQuality ? videoEl.getVideoPlaybackQuality() : null;
+      if (quality) {
+        statDroppedEl.textContent = `${quality.droppedVideoFrames}/${quality.totalVideoFrames}`;
+      } else {
+        statDroppedEl.textContent = "--";
+      }
+    }
+
+    function startStats() {
+      if (statsTimer) {
+        clearInterval(statsTimer);
+      }
+      statsTimer = setInterval(updateStats, 500);
+    }
+
+    function updateStatsVisibility() {
+      statsEl.classList.toggle("hidden", !showStatsEl.checked);
+    }
+
     function assignHls(url) {
       if (!url) {
-        setStatus("Please provide a valid HLS URL.", true);
+        setState("Please provide a valid HLS URL.", true);
         return;
       }
 
       cleanupHls();
-      setStatus("Loading stream...");
+      applyVideoFlags();
+      updateStatsVisibility();
+      setState("Loading stream...");
       inputEl.value = url;
 
       if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
+        setState("Native HLS detected.");
         videoEl.src = url;
         videoEl.play().catch(() => {
-          setStatus("Loaded HLS, press play to start.");
+          setLog("Loaded HLS, press play to start.");
         });
         return;
       }
 
       if (window.Hls && window.Hls.isSupported()) {
-        hlsInstance = new window.Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          // Low-latency live optimizations
-          liveSyncDuration: 3,           // Target 3s behind live edge (default: 6)
-          liveMaxLatencyDuration: 8,     // Max 8s behind before catch-up (default: Infinity)
-          liveDurationInfinity: true,    // Treat as infinite live stream
-          // Buffer settings
-          maxBufferLength: 10,           // Max buffer ahead (default: 30)
-          maxMaxBufferLength: 30,        // Max buffer in any case
-          maxBufferSize: 30 * 1000000,   // 30MB max buffer
-          // Faster start
-          backBufferLength: 10,          // Keep only 10s of back buffer
-          // Fragment loading
-          maxFragLookUpTolerance: 0.2,   // Faster fragment matching
-        });
+        hlsInstance = new window.Hls(buildHlsConfig());
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(videoEl);
+        startStats();
         hlsInstance.on(window.Hls.Events.MANIFEST_PARSED, () => {
+          setState("Manifest parsed, ready to play.");
           videoEl.play().catch(() => {
-            setStatus("Manifest parsed, press play to start.");
+            setLog("Manifest parsed, press play to start.");
           });
         });
         hlsInstance.on(window.Hls.Events.ERROR, (_, data) => {
           if (data?.fatal) {
-            setStatus("Playback error: " + data.details, true);
+            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
+              setLog("Network error, retrying...", true);
+              hlsInstance.startLoad();
+            } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
+              setLog("Media error, trying to recover...", true);
+              hlsInstance.recoverMediaError();
+            } else {
+              setState("Playback error: " + data.details, true);
+              hlsInstance.destroy();
+            }
           }
         });
         return;
       }
 
-      setStatus("HLS is not supported in this browser.", true);
+      setState("HLS is not supported in this browser.", true);
     }
 
     window.assignHls = assignHls;
@@ -248,8 +480,36 @@
       assignHls(inputEl.value.trim());
     });
 
+    videoEl.addEventListener("waiting", () => setStatus("Buffering..."));
+    videoEl.addEventListener("playing", () => setStatus("Playing"));
+    videoEl.addEventListener("pause", () => setStatus("Paused"));
+
+    lowLatencyEl.addEventListener("change", () => {
+      if (hlsInstance) {
+        setLog("Low latency setting applies on next load.");
+      }
+    });
+    autoplayEl.addEventListener("change", applyVideoFlags);
+    mutedEl.addEventListener("change", applyVideoFlags);
+    showStatsEl.addEventListener("change", updateStatsVisibility);
+
     const params = new URLSearchParams(window.location.search);
     let autoUrl = params.get("hls") || params.get("url");
+
+    if (params.has("ll")) {
+      lowLatencyEl.checked = params.get("ll") !== "0";
+    }
+    if (params.has("autoplay")) {
+      autoplayEl.checked = params.get("autoplay") !== "0";
+    }
+    if (params.has("muted")) {
+      mutedEl.checked = params.get("muted") !== "0";
+    }
+    if (params.has("stats")) {
+      showStatsEl.checked = params.get("stats") !== "0";
+    }
+    applyVideoFlags();
+    updateStatsVisibility();
 
     // Decode URL if it was encoded
     if (autoUrl) {
